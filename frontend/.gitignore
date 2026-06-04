@@ -1,0 +1,27 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+
+# Coverage/Test results
+coverage/
+
+# Supabase local files
+supabase/.temp/
+supabase/functions/.env
+
+# Editor / IDE configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
