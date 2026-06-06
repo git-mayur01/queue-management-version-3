@@ -950,13 +950,16 @@ export default function CashierPage() {
             <div 
               className="modal-content" 
               style={{ 
+                width: '98%',
                 maxWidth: '440px', 
+                margin: '0 auto',
                 padding: '1.25rem', 
                 overflow: 'hidden', 
                 borderRadius: '1.5rem', 
                 background: 'var(--card)',
                 boxShadow: '0 24px 64px rgba(0, 0, 0, 0.25)',
-                border: '1px solid var(--line)'
+                border: '2px solid #000000',
+                boxSizing: 'border-box'
               }} 
               onClick={(e) => e.stopPropagation()}
             >
@@ -979,7 +982,7 @@ export default function CashierPage() {
                   ×
                 </button>
               </header>
-              <div style={{ padding: '0.5rem 0 0 0' }}>
+              <div style={{ padding: '0.5rem 1% 0 1%' }}>
                 <OrderCard
                   order={popupOrder}
                   onAddItem={(ord) => {

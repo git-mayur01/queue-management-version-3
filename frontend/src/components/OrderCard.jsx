@@ -209,6 +209,8 @@ export default function OrderCard({ order, onStatusChange, onAddItem, busy, isKi
         boxSizing: 'border-box',
         padding: '1.25rem',
         overflow: 'hidden',
+        border: '2px solid #000000',
+        borderRadius: '1.25rem',
       }}
     >
       {/* Header */}
