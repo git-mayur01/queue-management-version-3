@@ -437,7 +437,7 @@ export default function CashierPage() {
         >
           <form className="cashier-layout" onSubmit={submitOrder}>
             {/* Step 1: Order Type */}
-            <section className="panel">
+            <section className="panel" style={{ border: '2px solid #000000' }}>
               <h2>1. Order type</h2>
               <div className="segmented-control">
                 <button type="button" className={orderType === 'DINE_IN' ? 'active' : ''} onClick={() => setOrderType('DINE_IN')}>Dine In</button>
@@ -465,7 +465,7 @@ export default function CashierPage() {
             {/* Step 2: Add Items */}
             <section className="panel menu-panel" style={{ border: '2px solid #000000' }}>
               <h2>2. Add items</h2>
-              <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1rem', background: '#ffffff' }}>
+              <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '2px solid #000000', borderRadius: '1rem', background: '#ffffff' }}>
                 {sortedMenu.map((item) => (
                   <button
                     type="button"
@@ -482,7 +482,7 @@ export default function CashierPage() {
             </section>
 
             {/* Step 3: Current Order Summary */}
-            <section className="panel cart-panel">
+            <section className="panel cart-panel" style={{ border: '2px solid #000000' }}>
               <h2>3. Current order</h2>
               {cart.length === 0 ? <p className="empty-state">Tap menu items to add them.</p> : (
                 <>
