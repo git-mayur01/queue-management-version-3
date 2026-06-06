@@ -363,10 +363,21 @@ export default function CashierPage() {
     return activeOrders.filter(o => o.status === selectedFilter);
   }, [activeOrders, selectedFilter]);
 
+  // Tab state for cashier screen: 'new-order' | 'active-orders'
+  const [cashierTab, setCashierTab] = useState('new-order');
+  const [cashierTabDir, setCashierTabDir] = useState('none');
+
+  function switchCashierTab(tab) {
+    if (tab === cashierTab) return;
+    setCashierTabDir(tab === 'active-orders' ? 'right' : 'left');
+    setCashierTab(tab);
+  }
+
   return (
     <main className="page cashier-page">
       <PageHeader title="Cashier" connected={connected} />
 
+      {/* Ready for pickup banner — always visible above tabs */}
       {readyOrders.length > 0 && (
         <section className="panel ready-alert">
           <h2>Ready for pickup</h2>
@@ -376,287 +387,291 @@ export default function CashierPage() {
         </section>
       )}
 
-      <form className="cashier-layout" onSubmit={submitOrder}>
-        {/* Step 1: Order Type */}
-        <section className="panel">
-          <h2>1. Order type</h2>
-          <div className="segmented-control">
-            <button type="button" className={orderType === 'DINE_IN' ? 'active' : ''} onClick={() => setOrderType('DINE_IN')}>Dine In</button>
-            <button type="button" className={orderType === 'PARCEL' ? 'active' : ''} onClick={() => {
-              setOrderType('PARCEL');
-              setShowInlineTableInput(false);
-              setTableNumber('');
-            }}>Parcel</button>
-          </div>
-          {orderType === 'DINE_IN' && (
-            <label className="field-label">
-              Table number
-              <input 
-                type="text"
-                pattern="[0-9]*"
-                value={tableNumber} 
-                onChange={handleTableNumberChange} 
-                placeholder="1 to 15" 
-                inputMode="numeric" 
-              />
-            </label>
-          )}
-        </section>
-
-        {/* Step 2: Add Items */}
-        <section className="panel menu-panel">
-          <h2>2. Add items</h2>
-          <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1rem', background: '#ffffff' }}>
-            {sortedMenu.map((item) => (
-              <button
-                type="button"
-                key={item.name}
-                className={`menu-item-card ${item.available ? 'item-available' : 'item-unavailable'}`}
-                onClick={() => handleMenuClick(item)}
-                disabled={!item.available}
-              >
-                <span className="item-title">{item.name}</span>
-                {!item.available && <span className="unavailable-badge">Out of Stock</span>}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Step 3: Current Order Summary */}
-        <section className="panel cart-panel">
-          <h2>3. Current order</h2>
-          {cart.length === 0 ? <p className="empty-state">Tap menu items to add them.</p> : (
-            <>
-              <ul className="cart-list">
-                {cart.map((item) => (
-                  <li key={`${item.item_name}-${item.portion}`} className="cart-item-row">
-                    <div className="cart-item-meta">
-                      <span className="cart-item-name">{item.item_name}</span>
-                      <span className="cart-item-portion">{item.portion}</span>
-                      <span className="cart-item-unit">₹{item.unit_price} each</span>
-                    </div>
-                    <div className="cart-item-controls">
-                      <div className="qty-controls">
-                        <button type="button" onClick={() => changeQuantity(item.item_name, item.portion, -1)}>-</button>
-                        <strong>{item.quantity}</strong>
-                        <button type="button" onClick={() => changeQuantity(item.item_name, item.portion, 1)}>+</button>
-                      </div>
-                      <span className="cart-item-subtotal">₹{item.total_price}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="cart-summary-total">
-                <span>Total Items: <strong>{totalItems}</strong></span>
-                <span>Bill Amount: <strong>₹{billAmount}</strong></span>
-              </div>
-            </>
-          )}
-          {cart.length > 0 && orderType === 'DINE_IN' && showInlineTableInput && (
-            <div style={{
-              background: '#fff7ed',
-              border: '1.5px dashed var(--amber)',
-              borderRadius: '1rem',
-              padding: '1rem',
-              marginBottom: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              animation: 'fadeIn 0.2s ease-out',
-              boxShadow: '0 4px 12px rgba(234, 88, 12, 0.05)'
-            }}>
-              <label style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span>🪑</span> Enter Table Number:
-              </label>
-              <input
-                type="text"
-                pattern="[0-9]*"
-                inputMode="numeric"
-                placeholder="Table 1 to 15"
-                value={tableNumber}
-                onChange={handleTableNumberChange}
-                style={{
-                  width: '100%',
-                  padding: '0.7rem 0.9rem',
-                  borderRadius: '0.75rem',
-                  border: '1px solid var(--amber)',
-                  fontWeight: 900,
-                  background: '#ffffff',
-                  fontSize: '1.05rem',
-                  outline: 'none',
-                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
-                }}
-                autoFocus
-              />
-            </div>
-          )}
-          <ErrorMessage message={error} />
-          <button className="primary-action" type="submit" disabled={submitting || cart.length === 0}>
-            {submitting ? 'Generating...' : `Generate order (₹${billAmount})`}
+      {/* ── Cashier Tab Nav Wrapper ── */}
+      <div className="cashier-tab-nav-sticky-wrapper">
+        {/* ── Cashier Tab Nav ── */}
+        <div className="kitchen-tab-nav cashier-tab-nav" role="tablist">
+          <button
+            role="tab"
+            aria-selected={cashierTab === 'new-order'}
+            className={`kitchen-tab-btn ${cashierTab === 'new-order' ? 'ktab-active' : ''}`}
+            onClick={() => switchCashierTab('new-order')}
+            id="ctab-new-order"
+          >
+            <span className="ktab-icon">🛒</span>
+            <span>New Order</span>
+            {cart.length > 0 && (
+              <span className="ktab-badge">{cart.length}</span>
+            )}
           </button>
-        </section>
-      </form>
+          <button
+            role="tab"
+            aria-selected={cashierTab === 'active-orders'}
+            className={`kitchen-tab-btn ${cashierTab === 'active-orders' ? 'ktab-active' : ''}`}
+            onClick={() => switchCashierTab('active-orders')}
+            id="ctab-active-orders"
+          >
+            <span className="ktab-icon">📋</span>
+            <span>Active Orders</span>
+            {activeOrders.length > 0 && (
+              <span className="ktab-badge">{activeOrders.length}</span>
+            )}
+          </button>
+        </div>
+      </div>
 
-      {/* Portion Selection Modal */}
-      {activeModalItem && (
-        <div className="modal-overlay" onClick={() => setActiveModalItem(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <header className="modal-header">
-              <h2>Select Portion & Quantity</h2>
-              <button type="button" className="btn-close-modal" onClick={() => setActiveModalItem(null)}>×</button>
-            </header>
-            
-            <div className="modal-body">
-              <h3 className="modal-item-title">{activeModalItem.name}</h3>
-              
-              <div className="portion-selector-row">
-                <span className="selector-label">Portion:</span>
-                <div className="portion-options">
-                  {activeModalItem.halfPrice > 0 && (
-                    <button
-                      type="button"
-                      className={`portion-btn ${selectedPortion === 'Half' ? 'selected' : ''}`}
-                      onClick={() => setSelectedPortion('Half')}
-                    >
-                      Half Plate (₹{activeModalItem.halfPrice})
-                    </button>
-                  )}
-                  {activeModalItem.fullPrice > 0 && (
-                    <button
-                      type="button"
-                      className={`portion-btn ${selectedPortion === 'Full' ? 'selected' : ''}`}
-                      onClick={() => setSelectedPortion('Full')}
-                    >
-                      Full Plate (₹{activeModalItem.fullPrice})
-                    </button>
-                  )}
+      {/* ── Tab Content ── */}
+      <div className="kitchen-tab-content-wrap cashier-tab-content-wrap" aria-live="polite">
+
+        {/* ─── Tab 1: New Order ─── */}
+        <div
+          role="tabpanel"
+          aria-labelledby="ctab-new-order"
+          className={`kitchen-tab-panel ${
+            cashierTab === 'new-order'
+              ? 'ktab-panel-visible'
+              : cashierTabDir === 'right'
+              ? 'ktab-panel-exit-left'
+              : 'ktab-panel-hidden-right'
+          }`}
+        >
+          <form className="cashier-layout" onSubmit={submitOrder}>
+            {/* Step 1: Order Type */}
+            <section className="panel">
+              <h2>1. Order type</h2>
+              <div className="segmented-control">
+                <button type="button" className={orderType === 'DINE_IN' ? 'active' : ''} onClick={() => setOrderType('DINE_IN')}>Dine In</button>
+                <button type="button" className={orderType === 'PARCEL' ? 'active' : ''} onClick={() => {
+                  setOrderType('PARCEL');
+                  setShowInlineTableInput(false);
+                  setTableNumber('');
+                }}>Parcel</button>
+              </div>
+              {orderType === 'DINE_IN' && (
+                <label className="field-label">
+                  Table number
+                  <input
+                    type="text"
+                    pattern="[0-9]*"
+                    value={tableNumber}
+                    onChange={handleTableNumberChange}
+                    placeholder="1 to 15"
+                    inputMode="numeric"
+                  />
+                </label>
+              )}
+            </section>
+
+            {/* Step 2: Add Items */}
+            <section className="panel menu-panel">
+              <h2>2. Add items</h2>
+              <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1rem', background: '#ffffff' }}>
+                {sortedMenu.map((item) => (
+                  <button
+                    type="button"
+                    key={item.name}
+                    className={`menu-item-card ${item.available ? 'item-available' : 'item-unavailable'}`}
+                    onClick={() => handleMenuClick(item)}
+                    disabled={!item.available}
+                  >
+                    <span className="item-title">{item.name}</span>
+                    {!item.available && <span className="unavailable-badge">Out of Stock</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Step 3: Current Order Summary */}
+            <section className="panel cart-panel">
+              <h2>3. Current order</h2>
+              {cart.length === 0 ? <p className="empty-state">Tap menu items to add them.</p> : (
+                <>
+                  <ul className="cart-list">
+                    {cart.map((item) => (
+                      <li key={`${item.item_name}-${item.portion}`} className="cart-item-row">
+                        <div className="cart-item-meta">
+                          <span className="cart-item-name">{item.item_name}</span>
+                          <span className="cart-item-portion">{item.portion}</span>
+                          <span className="cart-item-unit">₹{item.unit_price} each</span>
+                        </div>
+                        <div className="cart-item-controls">
+                          <div className="qty-controls">
+                            <button type="button" onClick={() => changeQuantity(item.item_name, item.portion, -1)}>-</button>
+                            <strong>{item.quantity}</strong>
+                            <button type="button" onClick={() => changeQuantity(item.item_name, item.portion, 1)}>+</button>
+                          </div>
+                          <span className="cart-item-subtotal">₹{item.total_price}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="cart-summary-total">
+                    <span>Total Items: <strong>{totalItems}</strong></span>
+                    <span>Bill Amount: <strong>₹{billAmount}</strong></span>
+                  </div>
+                </>
+              )}
+              {cart.length > 0 && orderType === 'DINE_IN' && showInlineTableInput && (
+                <div style={{
+                  background: '#fff7ed',
+                  border: '1.5px dashed var(--amber)',
+                  borderRadius: '1rem',
+                  padding: '1rem',
+                  marginBottom: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  animation: 'fadeIn 0.2s ease-out',
+                  boxShadow: '0 4px 12px rgba(234, 88, 12, 0.05)'
+                }}>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>🪑</span> Enter Table Number:
+                  </label>
+                  <input
+                    type="text"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    placeholder="Table 1 to 15"
+                    value={tableNumber}
+                    onChange={handleTableNumberChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.9rem',
+                      borderRadius: '0.75rem',
+                      border: '1px solid var(--amber)',
+                      fontWeight: 900,
+                      background: '#ffffff',
+                      fontSize: '1.05rem',
+                      outline: 'none',
+                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
+                    }}
+                    autoFocus
+                  />
                 </div>
-              </div>
+              )}
+              <ErrorMessage message={error} />
+              <button className="primary-action" type="submit" disabled={submitting || cart.length === 0}>
+                {submitting ? 'Generating...' : `Generate order (₹${billAmount})`}
+              </button>
+            </section>
+          </form>
+        </div>
 
-              <div className="quantity-selector-row">
-                <span className="selector-label">Quantity:</span>
-                <div className="qty-controls modal-qty-controls">
-                  <button type="button" disabled={selectedQuantity <= 1} onClick={() => setSelectedQuantity(q => q - 1)}>-</button>
-                  <strong>{selectedQuantity}</strong>
-                  <button type="button" onClick={() => setSelectedQuantity(q => q + 1)}>+</button>
-                </div>
-              </div>
-
-              <div className="modal-total-bar">
-                <span>Portion Total:</span>
-                <strong>₹{((selectedPortion === 'Half' ? activeModalItem.halfPrice : activeModalItem.fullPrice) * selectedQuantity)}</strong>
-              </div>
+        {/* ─── Tab 2: Active Orders ─── */}
+        <div
+          role="tabpanel"
+          aria-labelledby="ctab-active-orders"
+          className={`kitchen-tab-panel ${
+            cashierTab === 'active-orders'
+              ? 'ktab-panel-visible'
+              : cashierTabDir === 'left'
+              ? 'ktab-panel-exit-right'
+              : 'ktab-panel-hidden-left'
+          }`}
+        >
+          <section className="panel cashier-active-orders-panel">
+            <div className="section-title-row" style={{ marginBottom: '1.25rem' }}>
+              <h2>Active Orders</h2>
             </div>
 
-            <footer className="modal-footer">
-              <button type="button" className="btn-cancel" onClick={() => setActiveModalItem(null)}>Cancel</button>
-              <button type="button" className="primary-action btn-confirm-add" onClick={addToCart}>
-                Add to Cart
-              </button>
-            </footer>
-          </div>
+            {activeOrders.length === 0 ? (
+              <div className="kitchen-tab-empty">
+                <span className="kitchen-tab-empty-icon">📋</span>
+                <p>No active orders at the moment.</p>
+              </div>
+            ) : (
+              <div className="active-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1.25rem', background: '#ffffff' }}>
+                {activeOrders.map((order) => {
+                  const totalAmount = order.items ? order.items.reduce((sum, item) => sum + (item.total_price || 0), 0) : 0;
+                  const itemCount = order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+                  const statusColors = {
+                    PENDING: { color: 'var(--amber)', border: 'var(--amber)', bg: '#fff7ed' },
+                    COOKING: { color: 'var(--blue)', border: 'var(--blue)', bg: '#eff6ff' },
+                    READY: { color: 'var(--green)', border: 'var(--green)', bg: '#ecfdf5' },
+                    DELIVERED: { color: 'var(--muted)', border: 'var(--muted)', bg: '#f4f4f5' },
+                    COMPLETED: { color: 'var(--muted)', border: 'var(--muted)', bg: '#f4f4f5' }
+                  };
+                  const theme = statusColors[order.status.toUpperCase()] || statusColors.PENDING;
+
+                  return (
+                    <div
+                      key={order.id}
+                      style={{
+                        border: '1px solid var(--line)',
+                        borderLeft: `5px solid ${theme.border}`,
+                        borderRadius: '0.85rem',
+                        background: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
+                        overflow: 'hidden',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                    >
+                      {/* Collapsed Header Bar / Tap Area */}
+                      <div
+                        onClick={() => toggleOrderExpand(order.id)}
+                        style={{
+                          padding: '0.85rem 1.25rem',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          flexWrap: 'nowrap',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          background: '#ffffff',
+                          userSelect: 'none',
+                          gap: '0.75rem',
+                          width: '100%',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        {/* Left: Token & Table */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--ink)' }}>
+                            #{order.token_number}
+                          </span>
+                          <span style={{
+                            fontSize: '0.85rem',
+                            fontWeight: 800,
+                            color: 'var(--muted)',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {order.order_type === 'DINE_IN' ? `Table ${order.table_number}` : 'Parcel'}
+                          </span>
+                        </div>
+
+                        {/* Middle: Items count */}
+                        <div style={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                            {itemCount} {itemCount === 1 ? 'Item' : 'Items'}
+                          </span>
+                        </div>
+
+                        {/* Right: Price & Arrow */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary-dark)', whiteSpace: 'nowrap' }}>
+                            ₹{totalAmount}
+                          </span>
+                          <span style={{
+                            fontSize: '0.85rem',
+                            fontWeight: '900',
+                            color: 'var(--muted)',
+                            display: 'inline-block',
+                            flexShrink: 0
+                          }}>
+                            ▼
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         </div>
-      )}
-
-      {/* Active Orders Section */}
-      <section className="panel cashier-active-orders-panel" style={{ marginTop: '2rem' }}>
-        <div className="section-title-row" style={{ marginBottom: '1.25rem' }}>
-          <h2>Active Orders</h2>
-        </div>
-
-        {activeOrders.length === 0 ? (
-          <p className="empty-state">No active orders at the moment.</p>
-        ) : (
-          <div className="active-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '550px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1.25rem', background: '#ffffff' }}>
-            {activeOrders.map((order) => {
-              const totalAmount = order.items ? order.items.reduce((sum, item) => sum + (item.total_price || 0), 0) : 0;
-              const itemCount = order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-
-              const statusColors = {
-                PENDING: { color: 'var(--amber)', border: 'var(--amber)', bg: '#fff7ed' },
-                COOKING: { color: 'var(--blue)', border: 'var(--blue)', bg: '#eff6ff' },
-                READY: { color: 'var(--green)', border: 'var(--green)', bg: '#ecfdf5' },
-                DELIVERED: { color: 'var(--muted)', border: 'var(--muted)', bg: '#f4f4f5' },
-                COMPLETED: { color: 'var(--muted)', border: 'var(--muted)', bg: '#f4f4f5' }
-              };
-              const theme = statusColors[order.status.toUpperCase()] || statusColors.PENDING;
-
-              return (
-                <div 
-                  key={order.id}
-                  style={{
-                    border: '1px solid var(--line)',
-                    borderLeft: `5px solid ${theme.border}`,
-                    borderRadius: '0.85rem',
-                    background: '#ffffff',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                    overflow: 'hidden',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  {/* Collapsed Header Bar / Tap Area */}
-                  <div 
-                    onClick={() => toggleOrderExpand(order.id)}
-                    style={{
-                      padding: '0.85rem 1.25rem',
-                      display: 'flex',
-                      flexDirection: 'row',
-                      flexWrap: 'nowrap',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      background: '#ffffff',
-                      userSelect: 'none',
-                      gap: '0.75rem',
-                      width: '100%',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    {/* Left Column: Token & Table */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
-                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--ink)' }}>
-                        #{order.token_number}
-                      </span>
-                      <span style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 800,
-                        color: 'var(--muted)',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {order.order_type === 'DINE_IN' ? `Table ${order.table_number}` : 'Parcel'}
-                      </span>
-                    </div>
-
-                    {/* Middle Column: Items count */}
-                    <div style={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                        {itemCount} {itemCount === 1 ? 'Item' : 'Items'}
-                      </span>
-                    </div>
-
-                    {/* Right Column: Price & Arrow */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary-dark)', whiteSpace: 'nowrap' }}>
-                        ₹{totalAmount}
-                      </span>
-                      <span style={{ 
-                        fontSize: '0.85rem', 
-                        fontWeight: '900', 
-                        color: 'var(--muted)', 
-                        display: 'inline-block',
-                        flexShrink: 0
-                      }}>
-                        ▼
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      </div>
 
       {/* Add Item to Existing Order Modal */}
       {activeOrderEditing && (
@@ -853,12 +868,75 @@ export default function CashierPage() {
         </div>
       )}
 
+      {/* Portion Selection Modal */}
+      {activeModalItem && (
+        <div className="modal-overlay" onClick={() => setActiveModalItem(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <header className="modal-header">
+              <h2>Select Portion & Quantity</h2>
+              <button type="button" className="btn-close-modal" onClick={() => setActiveModalItem(null)}>×</button>
+            </header>
+            
+            <div className="modal-body">
+              <h3 className="modal-item-title">{activeModalItem.name}</h3>
+              
+              <div className="portion-selector-row">
+                <span className="selector-label">Portion:</span>
+                <div className="portion-options">
+                  {activeModalItem.halfPrice > 0 && (
+                    <button
+                      type="button"
+                      className={`portion-btn ${selectedPortion === 'Half' ? 'selected' : ''}`}
+                      onClick={() => setSelectedPortion('Half')}
+                    >
+                      Half Plate (₹{activeModalItem.halfPrice})
+                    </button>
+                  )}
+                  {activeModalItem.fullPrice > 0 && (
+                    <button
+                      type="button"
+                      className={`portion-btn ${selectedPortion === 'Full' ? 'selected' : ''}`}
+                      onClick={() => setSelectedPortion('Full')}
+                    >
+                      Full Plate (₹{activeModalItem.fullPrice})
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="quantity-selector-row">
+                <span className="selector-label">Quantity:</span>
+                <div className="qty-controls modal-qty-controls">
+                  <button type="button" disabled={selectedQuantity <= 1} onClick={() => setSelectedQuantity(q => q - 1)}>-</button>
+                  <strong>{selectedQuantity}</strong>
+                  <button type="button" onClick={() => setSelectedQuantity(q => q + 1)}>+</button>
+                </div>
+              </div>
+
+              <div className="modal-total-bar">
+                <span>Portion Total:</span>
+                <strong>₹{((selectedPortion === 'Half' ? activeModalItem.halfPrice : activeModalItem.fullPrice) * selectedQuantity)}</strong>
+              </div>
+            </div>
+
+            <footer className="modal-footer">
+              <button type="button" className="btn-cancel" onClick={() => setActiveModalItem(null)}>Cancel</button>
+              <button type="button" className="primary-action btn-confirm-add" onClick={addToCart}>
+                Add to Cart
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
       {lastOrder && (
         <div className="cashier-toast">
-          <span className="toast-icon">✅</span>
+          <span className="toast-icon">✓</span>
           <div>
-            <strong>Order Generated Successfully!</strong>
-            <span>Token #{lastOrder.token_number} ({lastOrder.order_type === 'DINE_IN' ? `Table ${lastOrder.table_number}` : 'Parcel'})</span>
+            <strong>Order Created</strong>
+            <span className="toast-meta">
+              Token #{lastOrder.token_number}&nbsp;•&nbsp;{lastOrder.order_type === 'DINE_IN' ? `Table ${lastOrder.table_number}` : 'Parcel'}
+            </span>
           </div>
         </div>
       )}

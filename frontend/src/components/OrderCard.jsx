@@ -65,7 +65,7 @@ const STATUS_THEME = {
   },
 };
 
-export default function OrderCard({ order, onStatusChange, onAddItem, busy, isKitchen, onItemStatusChange, onRemoveItem }) {
+export default function OrderCard({ order, onStatusChange, onAddItem, busy, isKitchen, onItemStatusChange, onRemoveItem, highlighted }) {
   const nextStatus = getNextStatus(order.status);
   const totalItems  = order.items ? order.items.length : 0;
   const readyItems  = order.items
@@ -79,12 +79,14 @@ export default function OrderCard({ order, onStatusChange, onAddItem, busy, isKi
   if (isKitchen) {
     return (
       <article
-        className={`oc-kitchen-card oc-status-${order.status.toLowerCase()}`}
+        className={`oc-kitchen-card oc-status-${order.status.toLowerCase()} ${highlighted ? 'oc-card-highlighted' : ''}`}
         style={{
           background: theme.cardBg,
-          border: `2.5px solid ${theme.accentBorder}`,
+          border: highlighted ? '2.5px solid var(--amber)' : `2.5px solid ${theme.accentBorder}`,
           borderRadius: '1.25rem',
-          boxShadow: `0 6px 24px rgba(0,0,0,0.07), 0 0 0 1px ${theme.accentBorder}22`,
+          boxShadow: highlighted
+            ? '0 0 20px rgba(249, 115, 22, 0.6), 0 6px 24px rgba(0,0,0,0.07)'
+            : `0 6px 24px rgba(0,0,0,0.07), 0 0 0 1px ${theme.accentBorder}22`,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

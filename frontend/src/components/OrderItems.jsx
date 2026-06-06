@@ -1,3 +1,10 @@
+const KDS_STATUS_ABBR = {
+  PENDING: 'PND',
+  COOKING: 'CKG',
+  READY: 'RDY',
+  SERVED: 'SRV'
+};
+
 export default function OrderItems({ items = [], hidePrice, showCheckboxes, isKitchen, onItemStatusToggle }) {
   if (!items || items.length === 0) {
     return (
@@ -79,8 +86,36 @@ export default function OrderItems({ items = [], hidePrice, showCheckboxes, isKi
               }}
               onClick={() => onItemStatusToggle && onItemStatusToggle(item.id, item.status)}
             >
-              {/* Row 1: Name + Qty */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Row 1: Qty | Portion | Item Name */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', width: '100%' }}>
+                {/* Column 1: Quantity */}
+                <strong style={{
+                  fontSize: '1.05rem',
+                  fontWeight: '900',
+                  color: isReady || isServed ? 'var(--muted)' : 'var(--primary-dark)',
+                  width: '45px',
+                  textAlign: 'center',
+                  flexShrink: 0,
+                  display: 'inline-block',
+                }}>
+                  {item.quantity}×
+                </strong>
+                
+                {/* Column 2: Portion (Size) */}
+                <span style={{
+                  fontSize: '0.88rem',
+                  fontWeight: '700',
+                  color: isReady || isServed ? 'var(--muted)' : 'var(--ink)',
+                  width: '50px',
+                  textAlign: 'center',
+                  flexShrink: 0,
+                  display: 'inline-block',
+                  lineHeight: '1.2',
+                }}>
+                  {item.portion ? (item.portion.charAt(0).toUpperCase() + item.portion.slice(1).toLowerCase()) : 'Full'}
+                </span>
+
+                {/* Column 3: Item Name */}
                 <span
                   style={{
                     fontWeight: '800',
@@ -90,55 +125,59 @@ export default function OrderItems({ items = [], hidePrice, showCheckboxes, isKi
                     lineHeight: '1.2',
                     flex: 1,
                     minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    textAlign: 'left',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
                   }}
                 >
-                  {displayName}
+                  {item.item_name}
                 </span>
-                <strong style={{
-                  fontSize: '1rem',
-                  color: isReady || isServed ? 'var(--muted)' : 'var(--primary-dark)',
-                  marginLeft: '0.6rem',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}>
-                  ×{item.quantity}
-                </strong>
               </div>
 
-              {/* Row 2: Status badge (+ order type if present) */}
-              <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Row 2: [ORDER TYPE] (Left) | [STATUS] (Right) */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '100%',
+                marginTop: '0.1rem'
+              }}>
+                {/* Left: Order Type */}
+                <div style={{ marginLeft: 'calc(95px + 1.3rem)' }}>
+                  {item.order_type ? (
+                    <span style={{
+                      fontSize: '0.68rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '4px',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      background: item.order_type === 'DINE_IN' ? '#eff6ff' : '#fff7ed',
+                      color: item.order_type === 'DINE_IN' ? '#2563eb' : '#ea580c',
+                      border: item.order_type === 'DINE_IN' ? '1px solid #bfdbfe' : '1px solid #fed7aa',
+                      display: 'inline-block',
+                    }}>
+                      {item.order_type === 'DINE_IN' ? 'DINE IN' : 'PARCEL'}
+                    </span>
+                  ) : (
+                    <span></span>
+                  )}
+                </div>
+
+                {/* Right: Status */}
                 <span style={{
                   fontSize: '0.68rem',
                   background: badgeBg,
                   color: badgeColor,
                   border: badgeBorder,
-                  padding: '0.1rem 0.4rem',
+                  padding: '0.1rem 0.45rem',
                   borderRadius: '4px',
                   fontWeight: '900',
                   textTransform: 'uppercase',
                   letterSpacing: '0.03em',
                   display: 'inline-block',
                 }}>
-                  {status}
+                  {KDS_STATUS_ABBR[status] || status}
                 </span>
-
-                {item.order_type && (
-                  <span style={{
-                    fontSize: '0.68rem',
-                    padding: '0.1rem 0.4rem',
-                    borderRadius: '4px',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    background: item.order_type === 'DINE_IN' ? '#eff6ff' : '#fff7ed',
-                    color: item.order_type === 'DINE_IN' ? '#2563eb' : '#ea580c',
-                    border: item.order_type === 'DINE_IN' ? '1px solid #bfdbfe' : '1px solid #fed7aa',
-                  }}>
-                    {item.order_type === 'DINE_IN' ? 'DINE IN' : 'PARCEL'}
-                  </span>
-                )}
               </div>
             </li>
           );

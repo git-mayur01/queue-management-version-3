@@ -98,6 +98,8 @@ export default function KitchenPage() {
   const [error, setError] = useState('');
   const [busyOrderId, setBusyOrderId] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const newlyCreatedOrderIds = useRef(new Set());
+  const [highlightedOrderIds, setHighlightedOrderIds] = useState(new Set());
 
   // Mobile tab state: 'active' | 'pending'
   const [activeTab, setActiveTab] = useState('active');
@@ -146,6 +148,22 @@ export default function KitchenPage() {
       }, 150);
     };
 
+    const handleOrderEvent = (payload) => {
+      triggerReload();
+
+      if (!isMounted.current) return;
+
+      if (payload.eventType === 'INSERT') {
+        const newOrderId = payload.new.id;
+        newlyCreatedOrderIds.current.add(newOrderId);
+        const timer = setTimeout(() => {
+          newlyCreatedOrderIds.current.delete(newOrderId);
+          activeTimers.current.delete(timer);
+        }, 10000);
+        activeTimers.current.add(timer);
+      }
+    };
+
     const processAccumulatedEvents = async () => {
       const events = [...accumulatedEvents.current];
       accumulatedEvents.current = [];
@@ -164,86 +182,49 @@ export default function KitchenPage() {
 
       for (const [orderIdStr, orderEvents] of Object.entries(eventsByOrder)) {
         const orderId = Number(orderIdStr);
-
-        const isExistingActive = orderEvents.some(e => e.isExistingActive);
-        if (!isExistingActive) {
-          continue;
-        }
-
         const existingOrder = ordersRef.current.find(o => o.id === orderId);
         if (!existingOrder) continue;
 
-        let addedCount = 0;
-        let removedCount = 0;
-        let modifiedCount = 0;
-
-        for (const e of orderEvents) {
-          if (e.eventType === 'INSERT') {
-            addedCount += e.new.quantity || 1;
-          } else if (e.eventType === 'DELETE') {
-            removedCount += e.old.quantity || 1;
-          } else if (e.eventType === 'UPDATE') {
-            const oldQty = e.old?.quantity;
-            const newQty = e.new?.quantity;
-            if (oldQty !== newQty) {
-              const diff = (newQty || 0) - (oldQty || 0);
-              if (diff > 0) {
-                addedCount += diff;
-              } else if (diff < 0) {
-                removedCount += Math.abs(diff);
-              } else {
-                modifiedCount += 1;
-              }
-            } else {
-              modifiedCount += 1;
-            }
-          }
-        }
-
-        if (addedCount === 0 && removedCount === 0 && modifiedCount === 0) {
-          continue;
-        }
-
-        let color = 'blue';
-        let message = '';
-        if (addedCount > 0 && removedCount === 0 && modifiedCount === 0) {
-          color = 'green';
-          message = `+ ${addedCount} item${addedCount > 1 ? 's' : ''} added`;
-        } else if (removedCount > 0 && addedCount === 0 && modifiedCount === 0) {
-          color = 'red';
-          message = `- ${removedCount} item${removedCount > 1 ? 's' : ''} removed`;
-        } else {
-          color = 'blue';
-          if (modifiedCount > 0 && addedCount === 0 && removedCount === 0) {
-            message = `${modifiedCount} item${modifiedCount > 1 ? 's' : ''} modified`;
-          } else {
-            message = 'Items modified';
-          }
-        }
-
-        const subtitle = existingOrder.order_type === 'DINE_IN' ? `Table ${existingOrder.table_number} updated` : 'Parcel updated';
-
         const newNotif = {
           id: Date.now() + Math.random(),
-          title: '🔔 ORDER UPDATED',
-          subtitle,
-          message,
-          color
+          title: '⚠️ Active Order Updated',
+          subtitle: `Order #${existingOrder.token_number}`,
+          message: 'Items were added, removed, or modified. Please review the updated order.',
+          color: 'amber'
         };
 
         setNotifications((prev) => {
-          const isDuplicate = prev.some(n => n.subtitle === newNotif.subtitle && n.message === newNotif.message && n.color === newNotif.color);
+          const isDuplicate = prev.some(n => n.subtitle === newNotif.subtitle);
           if (isDuplicate) return prev;
           return [...prev, newNotif];
         });
 
-        const timer = setTimeout(() => {
+        // Set card highlight
+        setHighlightedOrderIds((prev) => {
+          const next = new Set(prev);
+          next.add(orderId);
+          return next;
+        });
+
+        const timerNotif = setTimeout(() => {
           if (isMounted.current) {
             setNotifications((prev) => prev.filter((n) => n.id !== newNotif.id));
           }
-          activeTimers.current.delete(timer);
+          activeTimers.current.delete(timerNotif);
         }, 5000);
-        activeTimers.current.add(timer);
+        activeTimers.current.add(timerNotif);
+
+        const timerHighlight = setTimeout(() => {
+          if (isMounted.current) {
+            setHighlightedOrderIds((prev) => {
+              const next = new Set(prev);
+              next.delete(orderId);
+              return next;
+            });
+          }
+          activeTimers.current.delete(timerHighlight);
+        }, 5000);
+        activeTimers.current.add(timerHighlight);
       }
     };
 
@@ -253,12 +234,50 @@ export default function KitchenPage() {
       if (!isMounted.current) return;
 
       const orderId = payload.new?.order_id || payload.old?.order_id;
-      const isExistingActive = ordersRef.current.some(o => o.id === orderId);
+      if (!orderId) return;
 
-      accumulatedEvents.current.push({
-        ...payload,
-        isExistingActive
-      });
+      // Ignore if order was newly created
+      if (newlyCreatedOrderIds.current.has(orderId)) {
+        return;
+      }
+
+      // Ignore status updates
+      if (payload.eventType === 'UPDATE') {
+        const itemId = payload.new?.id || payload.old?.id;
+        const localOrder = ordersRef.current.find(o => o.id === orderId);
+        const localItem = localOrder?.items?.find(i => i.id === itemId);
+
+        if (localItem) {
+          const oldQty = localItem.quantity;
+          const oldName = localItem.item_name;
+          const oldPortion = localItem.portion;
+          const oldStatus = localItem.status;
+
+          const newQty = payload.new?.quantity;
+          const newName = payload.new?.item_name;
+          const newPortion = payload.new?.portion;
+          const newStatus = payload.new?.status;
+
+          if (
+            oldQty === newQty &&
+            oldName === newName &&
+            oldPortion === newPortion &&
+            oldStatus !== newStatus
+          ) {
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      // Verify the order exists in current active orders list
+      const isExistingActive = ordersRef.current.some(o => o.id === orderId);
+      if (!isExistingActive) {
+        return;
+      }
+
+      accumulatedEvents.current.push(payload);
 
       if (accumulateTimeout.current) {
         clearTimeout(accumulateTimeout.current);
@@ -274,7 +293,7 @@ export default function KitchenPage() {
 
     const channel = supabase
       .channel('kitchen-orders-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, triggerReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, handleOrderEvent)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, handleOrderItemEvent)
       .subscribe();
 
@@ -356,6 +375,7 @@ export default function KitchenPage() {
                     busy={busyOrderId === order.id}
                     isKitchen={true}
                     onItemStatusChange={handleItemStatusChange}
+                    highlighted={highlightedOrderIds.has(order.id)}
                   />
                 ))}
               </div>
@@ -432,6 +452,7 @@ export default function KitchenPage() {
                     busy={busyOrderId === order.id}
                     isKitchen={true}
                     onItemStatusChange={handleItemStatusChange}
+                    highlighted={highlightedOrderIds.has(order.id)}
                   />
                 ))}
               </div>
