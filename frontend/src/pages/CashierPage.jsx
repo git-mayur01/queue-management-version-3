@@ -692,7 +692,7 @@ export default function CashierPage() {
               {/* Step A: Select Item */}
               <div style={{ marginBottom: '0.85rem' }}>
                 <span className="selector-label" style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.8rem' }}>Select Item:</span>
-                <div className="menu-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(95px, 1fr))', maxHeight: '140px', overflowY: 'auto', border: '1px solid var(--line)', borderRadius: '0.8rem', padding: '0.4rem', background: '#fff' }}>
+                <div className="menu-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(95px, 1fr))', maxHeight: '260px', overflowY: 'auto', border: '2px solid #000000', borderRadius: '0.8rem', padding: '0.4rem', background: '#fff' }}>
                   {sortedMenu.map((item) => (
                     <button
                       type="button"
