@@ -230,7 +230,7 @@ h2 { font-size: 1.25rem; }
 .field-label { color: var(--muted); display: grid; font-weight: 800; gap: 0.35rem; margin-top: 1rem; }
 input { border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.8rem; width: 100%; }
 .menu-grid { display: grid; gap: 0.65rem; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
-.menu-grid button { background: #fff; border: 2px solid #000000; border-radius: 0.95rem; color: var(--ink); font-weight: 800; min-height: 4rem; padding: 0.8rem; }
+.menu-grid button { background: #fff; border: 1px solid var(--line); border-radius: 0.95rem; color: var(--ink); font-weight: 800; min-height: 4rem; padding: 0.8rem; }
 .menu-grid button:hover { border-color: var(--primary); color: var(--primary-dark); }
 .cart-list, .item-list, .aggregation-list { list-style: none; margin: 0; padding: 0; }
 .cart-list li, .item-list li, .aggregation-list li { align-items: center; border-bottom: 1px solid var(--line); display: flex; gap: 1rem; justify-content: space-between; padding: 0.75rem 0; }
