@@ -570,18 +570,18 @@ export default function CashierPage() {
               : 'ktab-panel-hidden-left'
           }`}
         >
-          <section className="panel cashier-active-orders-panel">
+          <section className="panel cashier-active-orders-panel" style={{ border: '2px solid #000000' }}>
             <div className="section-title-row" style={{ marginBottom: '1.25rem' }}>
               <h2>Active Orders</h2>
             </div>
 
             {activeOrders.length === 0 ? (
-              <div className="kitchen-tab-empty">
+              <div className="kitchen-tab-empty" style={{ border: '2px solid #000000' }}>
                 <span className="kitchen-tab-empty-icon">📋</span>
                 <p>No active orders at the moment.</p>
               </div>
             ) : (
-              <div className="active-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1.25rem', background: '#ffffff' }}>
+              <div className="active-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem', border: '2px solid #000000', borderRadius: '1.25rem', background: '#ffffff' }}>
                 {activeOrders.map((order) => {
                   const totalAmount = order.items ? order.items.reduce((sum, item) => sum + (item.total_price || 0), 0) : 0;
                   const itemCount = order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
