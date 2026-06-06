@@ -18,6 +18,83 @@ export default function App() {
     }
   });
 
+  // Synchronize currentUser with Supabase auth state to prevent navbar being hidden on reload / new tab
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function syncAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) {
+          if (isMounted) {
+            setCurrentUser(null);
+            sessionStorage.removeItem('user');
+          }
+          return;
+        }
+
+        // Fetch user profile from database
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile && isMounted) {
+          const user = {
+            id: profile.id,
+            name: profile.name,
+            username: session.user.email.split('@')[0],
+            role: profile.role
+          };
+          setCurrentUser(user);
+          sessionStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch (err) {
+        console.error('App auth sync error:', err);
+      }
+    }
+
+    syncAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
+      if (session && session.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profile && isMounted) {
+            const user = {
+              id: profile.id,
+              name: profile.name,
+              username: session.user.email.split('@')[0],
+              role: profile.role
+            };
+            setCurrentUser(user);
+            sessionStorage.setItem('user', JSON.stringify(user));
+          }
+        } catch (err) {
+          console.error('App auth change error:', err);
+        }
+      } else {
+        if (isMounted) {
+          setCurrentUser(null);
+          sessionStorage.removeItem('user');
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Factory Reset and notification states
   const [showResetConfirm, setShowResetConfirm] = useState(false);
