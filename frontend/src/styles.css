@@ -1397,7 +1397,30 @@ input { border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.8rem; w
 /* The cashier tab nav is always-visible (not inside a mobile-only wrapper) */
 .cashier-tab-nav {
   margin-bottom: 0;
+  background: rgba(228, 228, 231, 0.4) !important; /* Translucent grey background */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.15rem !important; /* Compact padding inside the tab pill */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
+
+/* Compact padding and size for Cashier tab buttons */
+.cashier-tab-nav .kitchen-tab-btn {
+  padding: 0.45rem 0.5rem !important; /* Tighter padding for vertical space saving */
+  font-size: 0.82rem !important; /* Slightly smaller text for professional look */
+  border-radius: 0.85rem !important; /* Clean rounded corners */
+}
+
+/* Glassmorphism for the active tab */
+.cashier-tab-nav .ktab-active {
+  background: rgba(255, 255, 255, 0.8) !important; /* Translucent white active button */
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 /* Allow the cashier tab content to grow naturally (no overflow:hidden clip) */
 .cashier-tab-content-wrap {
   overflow: visible;
@@ -1408,11 +1431,14 @@ input { border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.8rem; w
   position: sticky;
   top: 50px; /* immediately below the top-nav bar (50px height) */
   z-index: 100;
-  background: #f4f4f5; /* matches the body background color */
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
+  background: rgba(244, 244, 245, 0.75) !important; /* Translucent background */
+  backdrop-filter: blur(12px) !important; /* Premium glassmorphism blur */
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding-top: 0.25rem !important; /* Compact vertical padding */
+  padding-bottom: 0.25rem !important;
+  margin-top: -0.25rem !important; /* Tight spacing offset */
+  margin-bottom: 0.75rem !important; /* Bring content closer to tab nav */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Clean border divider */
   /* Extend background to full viewport width within padding */
   margin-left: calc(-1 * clamp(1rem, 4vw, 2rem));
   margin-right: calc(-1 * clamp(1rem, 4vw, 2rem));
