@@ -465,7 +465,7 @@ export default function CashierPage() {
             {/* Step 2: Add Items */}
             <section className="panel menu-panel">
               <h2>2. Add items</h2>
-              <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--line)', borderRadius: '1rem', background: '#ffffff' }}>
+              <div className="menu-grid" style={{ maxHeight: '450px', overflowY: 'auto', padding: '0.5rem', border: '2px solid #000000', borderRadius: '1rem', background: '#ffffff' }}>
                 {sortedMenu.map((item) => (
                   <button
                     type="button"

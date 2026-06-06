@@ -185,16 +185,76 @@ export default function KitchenPage() {
         const existingOrder = ordersRef.current.find(o => o.id === orderId);
         if (!existingOrder) continue;
 
+        // Parse changes to build exact modification lists
+        const added = [];
+        const removed = [];
+        const qtyChanges = [];
+
+        for (const e of orderEvents) {
+          if (e.eventType === 'INSERT') {
+            const name = e.new?.item_name;
+            const portion = e.new?.portion || 'Full';
+            const portionStr = portion !== 'Full' ? `${portion} ` : '';
+            added.push(`+ ${portionStr}${name}`);
+          } else if (e.eventType === 'DELETE') {
+            const itemId = e.old?.id;
+            const localItem = existingOrder.items?.find(i => i.id === itemId);
+            if (localItem) {
+              const name = localItem.item_name;
+              const portion = localItem.portion || 'Full';
+              const portionStr = portion !== 'Full' ? `${portion} ` : '';
+              removed.push(`- ${portionStr}${name}`);
+            }
+          } else if (e.eventType === 'UPDATE') {
+            const itemId = e.new?.id || e.old?.id;
+            const localItem = existingOrder.items?.find(i => i.id === itemId);
+            if (localItem) {
+              const oldQty = Number(localItem.quantity);
+              const newQty = Number(e.new?.quantity);
+              if (oldQty !== newQty) {
+                qtyChanges.push({
+                  name: localItem.item_name,
+                  oldQty,
+                  newQty
+                });
+              }
+            }
+          }
+        }
+
+        const lines = [];
+        if (added.length > 0) {
+          lines.push("Added:");
+          added.forEach(item => lines.push(item));
+        }
+        if (removed.length > 0) {
+          if (lines.length > 0) lines.push("");
+          lines.push("Removed:");
+          removed.forEach(item => lines.push(item));
+        }
+        if (qtyChanges.length > 0) {
+          qtyChanges.forEach(change => {
+            if (lines.length > 0) lines.push("");
+            lines.push(change.name);
+            lines.push("Qty:");
+            lines.push(`${change.oldQty} → ${change.newQty}`);
+          });
+        }
+
+        // If no actual cashier modifications were parsed (e.g. only status updates occurred), skip toaster
+        if (lines.length === 0) continue;
+
+        const messageBody = lines.join("\n");
+
         const newNotif = {
           id: Date.now() + Math.random(),
-          title: '⚠️ Active Order Updated',
-          subtitle: `Order #${existingOrder.token_number}`,
-          message: 'Items were added, removed, or modified. Please review the updated order.',
-          color: 'amber'
+          tokenNumber: existingOrder.token_number,
+          message: messageBody,
+          color: 'red'
         };
 
         setNotifications((prev) => {
-          const isDuplicate = prev.some(n => n.subtitle === newNotif.subtitle);
+          const isDuplicate = prev.some(n => n.tokenNumber === newNotif.tokenNumber && n.message === newNotif.message);
           if (isDuplicate) return prev;
           return [...prev, newNotif];
         });
@@ -248,15 +308,16 @@ export default function KitchenPage() {
         const localItem = localOrder?.items?.find(i => i.id === itemId);
 
         if (localItem) {
-          const oldQty = localItem.quantity;
-          const oldName = localItem.item_name;
-          const oldPortion = localItem.portion;
-          const oldStatus = localItem.status;
+          // Normalize types to avoid false reports from null vs undefined vs defaults mismatch
+          const oldQty = Number(localItem.quantity);
+          const oldName = String(localItem.item_name || '').trim();
+          const oldPortion = String(localItem.portion || 'Full').trim().toLowerCase();
+          const oldStatus = String(localItem.status || 'PENDING').trim().toUpperCase();
 
-          const newQty = payload.new?.quantity;
-          const newName = payload.new?.item_name;
-          const newPortion = payload.new?.portion;
-          const newStatus = payload.new?.status;
+          const newQty = Number(payload.new?.quantity);
+          const newName = String(payload.new?.item_name || '').trim();
+          const newPortion = String(payload.new?.portion || 'Full').trim().toLowerCase();
+          const newStatus = String(payload.new?.status || 'PENDING').trim().toUpperCase();
 
           if (
             oldQty === newQty &&
@@ -482,11 +543,12 @@ export default function KitchenPage() {
           <div key={notif.id} className={`kitchen-notification-card ${notif.color || 'blue'}`}>
             <header className="notification-header">
               <span className="notification-badge-icon">🔔</span>
-              <strong>{notif.title}</strong>
+              <strong className="notification-title-text" style={{ color: '#ef4444' }}>
+                ORDER <span className="notification-token-num">#{notif.tokenNumber}</span> UPDATED
+              </strong>
             </header>
             <div className="notification-body">
-              <h3 className="notification-table">{notif.subtitle}</h3>
-              <p className="notification-message">{notif.message}</p>
+              <p className="notification-message" style={{ whiteSpace: 'pre-line' }}>{notif.message}</p>
             </div>
             <button
               className="notification-close-btn"

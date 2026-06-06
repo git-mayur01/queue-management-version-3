@@ -3815,8 +3815,14 @@ input { border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.8rem; w
 .notification-message {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--muted);
-  font-weight: 600;
+  color: #4b5563; /* Dark gray details */
+  font-weight: 650;
+  white-space: pre-line;
+}
+
+.notification-token-num {
+  color: var(--ink); /* Black bold token number */
+  font-weight: 900;
 }
 
 .notification-close-btn {
