@@ -1807,20 +1807,6 @@ input { border: 1px solid var(--line); border-radius: 0.8rem; padding: 0.8rem; w
   }
 }
 
-@media (max-width: 480px) {
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
-}
-
-.quick-action-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-}
-
-.row-expanded-highlight {
-  background: #fffcf8 !important;
-  border-left: 4px solid var(--primary) !important;
-}
-
 /* Date filter panel responsive */
 .date-filter-panel > div:first-child {
   flex-wrap: wrap;
